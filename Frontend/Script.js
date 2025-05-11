@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (selected) {
         votes[selected] += 1;
         saveVotes();
-        voteMessage.textContent = `Thank you for voting for ${selected}!`;
+        voteMessage.textContent = `Thank you for voting for ${onlyone}!`;
         voteForm.reset();
       } else {
         voteMessage.textContent = 'Please select a candidate to vote.';
