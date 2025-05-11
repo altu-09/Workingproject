@@ -45,8 +45,8 @@ h1, h2 {
 }
 
 .btn {
-  background-color: #0b3d91;
-  color: white;
+  background-color: hsl(205, 86%, 31%);
+  color: rgb(11, 9, 9);
   padding: 10px 20px;
   border: none;
   border-radius: 8px;
