@@ -8,9 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const adminMessage = document.getElementById('adminMessage');
   const ledger = document.getElementById('ledger');
 
+  // LocalStorage keys
   const voteKey = 'votes';
   const electionStatusKey = 'electionStatus';
+  const votedUsersKey = 'votedUsers';
+  const currentUserKey = 'currentUser';
 
+  // Initialize data
   let votes = JSON.parse(localStorage.getItem(voteKey)) || {
     CONGRESS: 0,
     BJP: 0,
@@ -18,9 +22,21 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   let electionStatus = localStorage.getItem(electionStatusKey) || 'not_started';
+  let votedUsers = JSON.parse(localStorage.getItem(votedUsersKey)) || [];
+  const currentUser = JSON.parse(localStorage.getItem(currentUserKey));
+
+  // Check if user is logged in
+  if (!currentUser && voteForm) {
+    voteMessage.textContent = 'Please login first to vote.';
+    voteForm.style.display = 'none';
+  }
 
   function saveVotes() {
     localStorage.setItem(voteKey, JSON.stringify(votes));
+  }
+
+  function saveVotedUsers() {
+    localStorage.setItem(votedUsersKey, JSON.stringify(votedUsers));
   }
 
   function updateElectionStatus(status) {
@@ -50,19 +66,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  if (voteForm) {
+  if (voteForm && currentUser) {
+    // Check if current user has already voted
+    if (votedUsers.includes(currentUser.username)) {
+      voteMessage.textContent = 'You have already voted. Each user can only vote once.';
+      voteForm.style.display = 'none';
+    }
+
     voteForm.addEventListener('submit', (e) => {
       e.preventDefault();
+      
       if (electionStatus !== 'started') {
         voteMessage.textContent = 'Election is not active. Please wait for it to start.';
         return;
       }
+
+      // Double-check if user has already voted (in case they bypassed UI check)
+      if (votedUsers.includes(currentUser.username)) {
+        voteMessage.textContent = 'You have already voted. Each user can only vote once.';
+        return;
+      }
+
       const selected = voteForm.candidate.value;
       if (selected) {
+        // Record the vote
         votes[selected] += 1;
         saveVotes();
-        voteMessage.textContent = `Thank you for voting for ${onlyone}!`;
-        voteForm.reset();
+
+        // Mark user as voted
+        votedUsers.push(currentUser.username);
+        saveVotedUsers();
+
+        voteMessage.textContent = `Thank you for voting for ${selected}!`;
+        voteForm.style.display = 'none'; // Hide form after voting
+        updateResults();
+        updateLedger();
       } else {
         voteMessage.textContent = 'Please select a candidate to vote.';
       }
@@ -72,9 +110,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
       votes = { CONGRESS: 0, BJP: 0, JDS: 0 };
+      votedUsers = [];
       saveVotes();
+      saveVotedUsers();
       updateElectionStatus('not_started');
-      adminMessage.textContent = 'All votes have been reset and election status set to not started.';
+      adminMessage.textContent = 'All votes have been reset, voter records cleared, and election status set to not started.';
       updateResults();
       updateLedger();
     });
