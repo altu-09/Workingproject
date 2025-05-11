@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vote - Online Voting System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Vote for Your Favorite Candidate</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="vote.html">Vote</a>
+      <a href="result.html">Results</a>
+      <a href="admin.html">Admin</a>
+    </nav>
+  </header>
+
+  <main>
+    <form id="voteForm">
+      <label>Select Candidate:</label>
+      <div class="candidates">
+        <label><input type="radio" name="candidate" value="CONGRESS">CONGRESS</label>
+        <label><input type="radio" name="candidate" value="BJP"> BJP</label>
+        <label><input type="radio" name="candidate" value="JDS"> JDS</label>
+      </div>
+      <button type="submit" class="btn">Submit Vote</button>
+    </form>
+    <p id="voteMessage"></p>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Online Voting System. All rights reserved.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
