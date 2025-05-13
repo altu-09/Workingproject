@@ -2,75 +2,97 @@
 pragma solidity ^0.8.0;
 
 contract Voting {
-    // Structure to hold candidate details
     struct Candidate {
         uint id;
         string name;
         uint voteCount;
     }
 
-    // Store accounts that have voted
-    mapping(address => bool) public voters;
-    
-    // Store Candidates
+    mapping(address => bool) public hasVoted;
     mapping(uint => Candidate) public candidates;
-    
-    // Candidates Count
+
     uint public candidatesCount;
-    
-    // Election status
+
     enum ElectionStatus { NotStarted, Started, Ended }
     ElectionStatus public status;
 
+    address public admin; // FIXED: Removed immutable for constructor access
+
+    uint public electionStartTime;
+    uint public electionDuration = 3 days;
+
     // Events
-    event ElectionStarted();
-    event ElectionEnded();
+    event ElectionStarted(uint startTime);
+    event ElectionEnded(uint endTime);
     event VoteCast(address indexed voter, uint candidateId);
+    event CandidateAdded(uint indexed id, string name);
 
     constructor() {
+        admin = msg.sender;
         status = ElectionStatus.NotStarted;
         addCandidate("CONGRESS");
         addCandidate("BJP");
         addCandidate("JDS");
     }
 
-    function addCandidate(string memory _name) private {
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Only admin can perform this action");
+        _;
+    }
+
+    modifier electionActive() {
+        require(status == ElectionStatus.Started, "Election not active");
+        require(block.timestamp <= electionStartTime + electionDuration, "Election period ended");
+        _;
+    }
+
+    function addCandidate(string memory _name) public onlyAdmin {
+        require(status == ElectionStatus.NotStarted, "Cannot add candidates after election starts");
         candidatesCount++;
         candidates[candidatesCount] = Candidate(candidatesCount, _name, 0);
+        emit CandidateAdded(candidatesCount, _name);
     }
 
-    function startElection() public {
+    function startElection() public onlyAdmin {
         require(status == ElectionStatus.NotStarted, "Election already started or ended");
         status = ElectionStatus.Started;
-        emit ElectionStarted();
+        electionStartTime = block.timestamp;
+        emit ElectionStarted(electionStartTime);
     }
 
-    function endElection() public {
+    function endElection() public onlyAdmin {
         require(status == ElectionStatus.Started, "Election not started");
         status = ElectionStatus.Ended;
-        emit ElectionEnded();
+        emit ElectionEnded(block.timestamp);
     }
 
-    function vote(uint _candidateId) public {
-        require(status == ElectionStatus.Started, "Election not active");
-        require(!voters[msg.sender], "You have already voted");
+    function vote(uint _candidateId) public electionActive {
+        require(!hasVoted[msg.sender], "You have already voted");
         require(_candidateId > 0 && _candidateId <= candidatesCount, "Invalid candidate");
 
-        voters[msg.sender] = true;
+        hasVoted[msg.sender] = true;
         candidates[_candidateId].voteCount++;
-        
+
         emit VoteCast(msg.sender, _candidateId);
     }
 
-    function getResults() public view returns (string[] memory, uint[] memory) {
-        string[] memory names = new string[](candidatesCount);
-        uint[] memory votes = new uint[](candidatesCount);
-        
-        for (uint i = 1; i <= candidatesCount; i++) {
-            names[i-1] = candidates[i].name;
-            votes[i-1] = candidates[i].voteCount;
+    function getResults() public view returns (Candidate[] memory) {
+        Candidate[] memory result = new Candidate[](candidatesCount);
+        for (uint i = 0; i < candidatesCount; i++) {
+            result[i] = candidates[i + 1];
         }
-        
-        return (names, votes);
+        return result;
+    }
+
+    function getElectionTimeLeft() public view returns (uint) {
+        if (status != ElectionStatus.Started) return 0;
+        if (block.timestamp > electionStartTime + electionDuration) return 0;
+        return (electionStartTime + electionDuration) - block.timestamp;
+    }
+
+    function canVote(address _voter) public view returns (bool) {
+        return status == ElectionStatus.Started &&
+               !hasVoted[_voter] &&
+               block.timestamp <= electionStartTime + electionDuration;
     }
 }
